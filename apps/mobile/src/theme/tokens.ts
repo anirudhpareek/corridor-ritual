@@ -1,0 +1,113 @@
+export const theme = {
+  colors: {
+    canvas: '#F4EFE7',
+    elevated: '#FBF7F1',
+    sheet: '#FFFDF8',
+    primaryText: '#171411',
+    mutedText: '#71675B',
+    softLine: '#DDD2C2',
+    brass: '#9A7356',
+    brassSoft: '#E6D7C7',
+    forest: '#365649',
+    success: '#305344',
+    successSoft: '#D8E6DD',
+    pending: '#A67A51',
+    pendingSoft: '#F0E3D3',
+    danger: '#8E514A',
+    dangerSoft: '#EFD8D4',
+    inkSoft: '#2B2621',
+    overlay: 'rgba(23,20,17,0.14)',
+    shadow: 'rgba(30, 23, 17, 0.08)',
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
+    xxxl: 32,
+    giant: 40,
+  },
+  radius: {
+    sm: 10,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    pill: 999,
+  },
+  shadow: {
+    soft: {
+      shadowColor: 'rgba(30, 23, 17, 0.08)',
+      shadowOpacity: 1,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
+    },
+    lifted: {
+      shadowColor: 'rgba(30, 23, 17, 0.12)',
+      shadowOpacity: 1,
+      shadowRadius: 26,
+      shadowOffset: { width: 0, height: 14 },
+      elevation: 8,
+    },
+    sheet: {
+      shadowColor: 'rgba(30, 23, 17, 0.16)',
+      shadowOpacity: 1,
+      shadowRadius: 32,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 12,
+    },
+  },
+  motion: {
+    entrance: 320,
+    soft: 220,
+    success: 420,
+  },
+  layout: {
+    maxWidth: 720,
+    tabBarHeight: 82,
+  },
+  typography: {
+    display: {
+      fontFamily: 'InstrumentSerif_400Regular',
+      fontSize: 34,
+      lineHeight: 40,
+      letterSpacing: -0.8,
+    },
+    title: {
+      fontFamily: 'Manrope_700Bold',
+      fontSize: 20,
+      lineHeight: 26,
+      letterSpacing: -0.3,
+    },
+    section: {
+      fontFamily: 'Manrope_700Bold',
+      fontSize: 17,
+      lineHeight: 24,
+    },
+    body: {
+      fontFamily: 'Manrope_500Medium',
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    label: {
+      fontFamily: 'Manrope_700Bold',
+      fontSize: 13,
+      lineHeight: 18,
+      letterSpacing: 0.2,
+    },
+    caption: {
+      fontFamily: 'Manrope_600SemiBold',
+      fontSize: 12,
+      lineHeight: 16,
+      letterSpacing: 0.2,
+    },
+    mono: {
+      fontFamily: 'Manrope_700Bold',
+      fontVariant: ['tabular-nums'] as const,
+    },
+  },
+} as const;
+
+export type AppTheme = typeof theme;
