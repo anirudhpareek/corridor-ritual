@@ -22,7 +22,7 @@ export function PayStatusScreen() {
   const splitRef = useRef<BottomSheetModal>(null);
   const receipt = useScenarioStore((state) => state.lastReceipt);
   const clearPayDraft = useScenarioStore((state) => state.clearPayDraft);
-  const createSplitPreview = useScenarioStore((state) => state.createSplitPreview);
+  const createSplitRequest = useScenarioStore((state) => state.createSplitRequest);
   const { showToast } = useToast();
   const theme = useTheme();
 
@@ -91,18 +91,22 @@ export function PayStatusScreen() {
       </Screen>
       {receipt.merchant.category === 'Dinner' ? (
         <SplitFollowUpSheet
-          onSendSplit={() => {
-            createSplitPreview(receipt, 3);
+          onSubmit={(participants) => {
+            const splitId = createSplitRequest(receipt, participants);
             showToast({
               title: 'Split requests sent',
-              description: 'You can now see the pending split settle back into activity across the corridor.',
+              description: 'The table now lives as a real split flow instead of only a receipt follow-up.',
               tone: 'success',
             });
             clearPayDraft();
-            router.replace('/');
+            router.replace(`/split/${splitId}`);
           }}
-          receipt={receipt}
           ref={splitRef}
+          source={{
+            id: receipt.id,
+            total: receipt.total,
+            venueName: receipt.merchant.name,
+          }}
         />
       ) : null}
     </>

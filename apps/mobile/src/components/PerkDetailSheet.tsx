@@ -13,12 +13,14 @@ import { Text } from '../ui/Text';
 
 type Props = {
   perk: Perk | null;
+  onToggleSaved?: () => void;
   venue: Venue | null;
   onPrimaryAction: () => void;
+  saved?: boolean;
 };
 
 export const PerkDetailSheet = forwardRef<BottomSheetModal, Props>(function PerkDetailSheet(
-  { onPrimaryAction, perk, venue },
+  { onPrimaryAction, onToggleSaved, perk, saved = false, venue },
   ref,
 ) {
   const theme = useTheme();
@@ -84,7 +86,12 @@ export const PerkDetailSheet = forwardRef<BottomSheetModal, Props>(function Perk
           </Text>
         </View>
 
-        <Button label={venue ? 'Use this perk' : 'Open partners'} onPress={onPrimaryAction} />
+        <View style={styles.actions}>
+          <Button label={venue ? 'Use this perk' : 'Open partners'} onPress={onPrimaryAction} />
+          {onToggleSaved ? (
+            <Button label={saved ? 'Saved for this run' : 'Save for this run'} onPress={onToggleSaved} variant="secondary" />
+          ) : null}
+        </View>
       </View>
     </Sheet>
   );
@@ -147,5 +154,8 @@ const styles = StyleSheet.create({
   },
   partnerCopy: {
     maxWidth: 300,
+  },
+  actions: {
+    gap: 10,
   },
 });

@@ -93,9 +93,9 @@ describe('PayStatusScreen', () => {
 
     fireEvent.press(screen.getByText('Send 3 requests'));
 
-    expect(useScenarioStore.getState().splitPreviewActivity?.title).toBe('Split requests sent');
-    expect(useScenarioStore.getState().splitPreviewActivity?.subtitle).toBe("Jun's Table · 3 guests");
-    expect(useScenarioStore.getState().splitPreviewActivity?.amount.amount).toBe(111);
-    expect(router.replace).toHaveBeenCalledWith('/');
+    expect(useScenarioStore.getState().splitRequests[0]?.title).toBe('Split requests sent');
+    expect(useScenarioStore.getState().splitRequests[0]?.subtitle).toBe("Jun's Table · 3 guests");
+    expect(useScenarioStore.getState().splitRequests[0]?.requestedBack.amount).toBe(111);
+    expect(router.replace).toHaveBeenCalledWith('/split/split_receipt_success_1');
   });
 });

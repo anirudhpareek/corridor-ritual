@@ -18,6 +18,12 @@ export type TrustState = 'calm' | 'guest' | 'member_preview' | 'verification_pen
 
 export type PaymentStatus = 'idle' | 'success' | 'pending' | 'failed';
 
+export type SplitStatus = 'pending' | 'partially_settled' | 'settled';
+
+export type SplitParticipantStatus = 'pending' | 'paid';
+
+export type SupportRequestStatus = 'queued' | 'reviewing';
+
 export type MockScenario =
   | 'guest'
   | 'memberPreview'
@@ -93,6 +99,49 @@ export interface ActivityItem {
   direction: 'credit' | 'debit';
   kind: ActivityKind;
   status: ActivityStatus;
+  relatedSplitId?: string;
+}
+
+export interface SplitParticipant {
+  id: string;
+  name: string;
+  share: Money;
+  status: SplitParticipantStatus;
+  settledAt?: string;
+}
+
+export interface SplitRequest {
+  id: string;
+  receiptId: string;
+  createdAt: string;
+  title: string;
+  subtitle: string;
+  venueName: string;
+  total: Money;
+  requestedBack: Money;
+  status: SplitStatus;
+  note: string;
+  participants: SplitParticipant[];
+}
+
+export interface SupportRequestPreview {
+  id: string;
+  sourceActivityId: string;
+  receiptTitle: string;
+  receiptSubtitle: string;
+  reason: string;
+  createdAt: string;
+  status: SupportRequestStatus;
+  amount: Money;
+  direction: 'credit' | 'debit';
+  movementKind: ActivityKind;
+  movementStatus: ActivityStatus;
+}
+
+export interface SavedState {
+  venueIds: string[];
+  perkIds: string[];
+  tripIds: string[];
 }
 
 export interface BalanceSummary {

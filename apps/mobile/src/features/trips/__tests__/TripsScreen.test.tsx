@@ -46,4 +46,24 @@ describe('TripsScreen', () => {
     expect(screen.getByText('No saved places yet')).toBeTruthy();
     expect(screen.getByText('No active city benefits')).toBeTruthy();
   });
+
+  it('reflects saved trip and venue state across the briefing', async () => {
+    useScenarioStore.setState({
+      savedState: {
+        perkIds: ['perk_1'],
+        tripIds: ['next_trip_1'],
+        venueIds: ['venue_1'],
+      },
+      scenario: 'verified',
+    });
+
+    renderWithProviders(<TripsScreen />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+
+    expect(await screen.findByText('Run saved')).toBeTruthy();
+    expect(screen.getAllByText('Saved').length).toBeGreaterThanOrEqual(2);
+  });
 });

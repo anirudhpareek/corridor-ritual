@@ -12,7 +12,7 @@ import { PerkDetailSheet } from '../../components/PerkDetailSheet';
 import { VenueDetailSheet } from '../../components/VenueDetailSheet';
 import { VenueCard } from '../../components/VenueCard';
 import { triggerHaptic } from '../../lib/haptics';
-import { useTripsQuery } from '../../lib/queries';
+import { useSavedStateQuery, useTripsQuery } from '../../lib/queries';
 import { useScenarioStore } from '../../lib/store/useScenarioStore';
 import { useToast } from '../../providers/ToastProvider';
 import { useTheme } from '../../theme';
@@ -31,11 +31,16 @@ export function TripsScreen() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [selectedPerk, setSelectedPerk] = useState<Perk | null>(null);
   const { data, error, isLoading, isRefetching, refetch } = useTripsQuery();
+  const savedStateQuery = useSavedStateQuery();
   const { showToast } = useToast();
   const theme = useTheme();
   const scenario = useScenarioStore((state) => state.scenario);
   const setPayMerchant = useScenarioStore((state) => state.setPayMerchant);
   const setPayAmountText = useScenarioStore((state) => state.setPayAmountText);
+  const toggleVenueSaved = useScenarioStore((state) => state.toggleVenueSaved);
+  const togglePerkSaved = useScenarioStore((state) => state.togglePerkSaved);
+  const toggleTripSaved = useScenarioStore((state) => state.toggleTripSaved);
+  const savedState = savedStateQuery.data ?? { perkIds: [], tripIds: [], venueIds: [] };
 
   const trustTone =
     data?.user.memberState === 'guest'
@@ -137,11 +142,22 @@ export function TripsScreen() {
         {data.nextTrip ? (
           <TripMomentCard
             moment={data.nextTrip}
+            saved={savedState.tripIds.includes(data.nextTrip.id)}
             onSave={() => {
               void triggerHaptic('soft');
+              const nextTripId = data.nextTrip?.id;
+
+              if (!nextTripId) {
+                return;
+              }
+
+              const isSaved = savedState.tripIds.includes(nextTripId);
+              toggleTripSaved(nextTripId);
               showToast({
-                title: 'Route kept close',
-                description: `${data.corridor.label} stays pinned for this run in the prototype.`,
+                title: isSaved ? 'Run removed' : 'Route kept close',
+                description: isSaved
+                  ? `${data.corridor.label} no longer stays pinned for this run.`
+                  : `${data.corridor.label} stays pinned for this run in the prototype.`,
                 tone: 'success',
               });
             }}
@@ -181,13 +197,18 @@ export function TripsScreen() {
           title="Ready on arrival"
         />
         {data.savedPlaces.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.venueRail}>
-              {data.savedPlaces.map((venue) => (
-                <VenueCard key={venue.id} onPress={() => handleOpenVenueDetail(venue)} venue={venue} />
-              ))}
-            </View>
-          </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.venueRail}>
+                {data.savedPlaces.map((venue) => (
+                  <VenueCard
+                    key={venue.id}
+                    onPress={() => handleOpenVenueDetail(venue)}
+                    saved={savedState.venueIds.includes(venue.id)}
+                    venue={venue}
+                  />
+                ))}
+              </View>
+            </ScrollView>
         ) : (
           <EmptyState
             description="Saved places should stay sparse and corridor-specific, not turn into a travel marketplace."
@@ -217,7 +238,10 @@ export function TripsScreen() {
                   <View style={styles.perkCopy}>
                     <View style={styles.perkHeader}>
                       <Text variant="label">{perk.title}</Text>
-                      <Badge label={perk.label} tone="brass" />
+                      <View style={styles.perkBadges}>
+                        <Badge label={perk.label} tone="brass" />
+                        {savedState.perkIds.includes(perk.id) ? <Badge label="Saved" tone="forest" /> : null}
+                      </View>
                     </View>
                     <Text color="muted" style={styles.perkDescription}>
                       {perk.description}
@@ -235,8 +259,50 @@ export function TripsScreen() {
           />
         )}
       </Reveal>
-      <PerkDetailSheet onPrimaryAction={handlePaySelectedVenue} perk={selectedPerk} ref={perkDetailRef} venue={selectedVenue} />
-      <VenueDetailSheet onPrimaryAction={handlePaySelectedVenue} perk={selectedPerk} ref={venueDetailRef} venue={selectedVenue} />
+      <PerkDetailSheet
+        onPrimaryAction={handlePaySelectedVenue}
+        onToggleSaved={() => {
+          if (!selectedPerk) {
+            return;
+          }
+
+          const isSaved = savedState.perkIds.includes(selectedPerk.id);
+          togglePerkSaved(selectedPerk.id);
+          showToast({
+            title: isSaved ? 'Perk removed' : 'Perk kept close',
+            description: isSaved
+              ? `${selectedPerk.title} is no longer pinned for this run.`
+              : `${selectedPerk.title} now stays visible across the corridor.`,
+            tone: 'success',
+          });
+        }}
+        perk={selectedPerk}
+        ref={perkDetailRef}
+        saved={selectedPerk ? savedState.perkIds.includes(selectedPerk.id) : false}
+        venue={selectedVenue}
+      />
+      <VenueDetailSheet
+        onPrimaryAction={handlePaySelectedVenue}
+        onToggleSaved={() => {
+          if (!selectedVenue) {
+            return;
+          }
+
+          const isSaved = savedState.venueIds.includes(selectedVenue.id);
+          toggleVenueSaved(selectedVenue.id);
+          showToast({
+            title: isSaved ? 'Venue removed' : 'Venue kept close',
+            description: isSaved
+              ? `${selectedVenue.name} is no longer pinned for this run.`
+              : `${selectedVenue.name} now stays visible across the corridor.`,
+            tone: 'success',
+          });
+        }}
+        perk={selectedPerk}
+        ref={venueDetailRef}
+        saved={selectedVenue ? savedState.venueIds.includes(selectedVenue.id) : false}
+        venue={selectedVenue}
+      />
     </Screen>
   );
 }
@@ -277,6 +343,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     justifyContent: 'space-between',
+  },
+  perkBadges: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   perkDescription: {
     maxWidth: 300,

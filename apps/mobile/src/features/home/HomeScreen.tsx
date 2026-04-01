@@ -1,4 +1,4 @@
-import type { Perk, Venue } from '@corridor/domain';
+import type { ActivityItem, Perk, SplitRequest, SupportRequestPreview, Venue } from '@corridor/domain';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { router } from 'expo-router';
 import { Compass, Sparkles } from 'lucide-react-native';
@@ -6,21 +6,29 @@ import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ActivityRow } from '../../components/ActivityRow';
+import { ActivityDetailSheet } from '../../components/ActivityDetailSheet';
 import { AddMoneySheet } from '../../components/AddMoneySheet';
 import { CityMomentCard } from '../../components/CityMomentCard';
 import { MembershipStatusCard } from '../../components/MembershipStatusCard';
 import { OnboardingGateSheet } from '../../components/OnboardingGateSheet';
+import { SplitCard } from '../../components/SplitCard';
+import { SplitActivitySheet } from '../../components/SplitActivitySheet';
 import { TravelSignalCard } from '../../components/TravelSignalCard';
 import { TrustBanner } from '../../components/TrustBanner';
 import { VerificationPromptSheet } from '../../components/VerificationPromptSheet';
+import { SupportIssueSheet } from '../../components/SupportIssueSheet';
+import { SupportRequestDetailSheet } from '../../components/SupportRequestDetailSheet';
 import { VenueDetailSheet } from '../../components/VenueDetailSheet';
 import { VenueCard } from '../../components/VenueCard';
 import { triggerHaptic } from '../../lib/haptics';
-import { useHomeQuery } from '../../lib/queries';
+import { useHomeQuery, useSavedStateQuery, useSplitRequestsQuery, useSupportRequestsQuery } from '../../lib/queries';
+import { getSplitHomeMoment } from '../../lib/splits';
 import { useScenarioStore } from '../../lib/store/useScenarioStore';
 import { useToast } from '../../providers/ToastProvider';
 import { useTheme } from '../../theme';
+import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
+import { Card } from '../../ui/Card';
 import { EmptyState } from '../../ui/EmptyState';
 import { Screen } from '../../ui/Screen';
 import { Reveal } from '../../ui/Reveal';
@@ -33,14 +41,26 @@ export function HomeScreen() {
   const onboardingRef = useRef<BottomSheetModal>(null);
   const verificationRef = useRef<BottomSheetModal>(null);
   const venueDetailRef = useRef<BottomSheetModal>(null);
+  const activityDetailRef = useRef<BottomSheetModal>(null);
+  const supportIssueRef = useRef<BottomSheetModal>(null);
+  const supportRequestDetailRef = useRef<BottomSheetModal>(null);
+  const splitActivityRef = useRef<BottomSheetModal>(null);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+  const [selectedSplit, setSelectedSplit] = useState<SplitRequest | null>(null);
+  const [selectedSupportPreview, setSelectedSupportPreview] = useState<SupportRequestPreview | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [selectedPerk, setSelectedPerk] = useState<Perk | null>(null);
   const { showToast } = useToast();
   const { data, error, isLoading, isRefetching, refetch } = useHomeQuery();
+  const splitQuery = useSplitRequestsQuery();
+  const savedStateQuery = useSavedStateQuery();
+  const supportQuery = useSupportRequestsQuery();
   const theme = useTheme();
   const scenario = useScenarioStore((state) => state.scenario);
   const setPayMerchant = useScenarioStore((state) => state.setPayMerchant);
   const setPayAmountText = useScenarioStore((state) => state.setPayAmountText);
+  const createSupportPreview = useScenarioStore((state) => state.createSupportPreview);
+  const toggleVenueSaved = useScenarioStore((state) => state.toggleVenueSaved);
 
   const trustTone =
     scenario === 'guest'
@@ -55,12 +75,17 @@ export function HomeScreen() {
   const featuredVenue = data?.venues[0] ?? null;
   const featuredPerk =
     (featuredVenue ? data?.perks.find((perk) => perk.id === featuredVenue.featuredPerkId) : null) ?? data?.perks[0] ?? null;
-  const homeMoments = data
-    ? [
-        data.activity.find((item) => item.kind === 'split'),
-        data.activity.find((item) => item.kind !== 'split'),
-      ].filter((item): item is NonNullable<(typeof data.activity)[number]> => Boolean(item))
-    : [];
+  const latestSplit = splitQuery.data?.[0] ?? null;
+  const savedState = savedStateQuery.data ?? { perkIds: [], tripIds: [], venueIds: [] };
+  const supportCount = supportQuery.data?.length ?? 0;
+  const supportPreviews = supportQuery.data ?? [];
+  const homeMoments = data ? data.activity.filter((item) => item.kind !== 'split').slice(0, 2) : [];
+  const savedVenue = data?.venues.find((venue) => savedState.venueIds.includes(venue.id)) ?? null;
+  const savedPerk = data?.perks.find((perk) => savedState.perkIds.includes(perk.id)) ?? null;
+  const runSaved = data ? savedState.tripIds.includes(data.travelSignal.id) : false;
+  const existingSupportPreview =
+    selectedActivity ? supportPreviews.find((preview) => preview.sourceActivityId === selectedActivity.id) ?? null : null;
+  const latestSplitMoment = latestSplit ? getSplitHomeMoment(latestSplit.status) : null;
 
   const handleAddMoney = () => {
     void triggerHaptic('soft');
@@ -112,6 +137,19 @@ export function HomeScreen() {
     setPayAmountText(String(selectedVenue.recommendedSpend.amount));
     venueDetailRef.current?.dismiss();
     router.push('/pay/confirm');
+  };
+
+  const handleOpenActivityDetail = (item: ActivityItem) => {
+    if (item.kind === 'split' && item.relatedSplitId) {
+      void triggerHaptic('soft');
+      router.push(`/split/${item.relatedSplitId}`);
+      return;
+    }
+
+    void triggerHaptic('soft');
+    setSelectedSupportPreview(null);
+    setSelectedActivity(item);
+    activityDetailRef.current?.present();
   };
 
   if (isLoading) {
@@ -239,7 +277,12 @@ export function HomeScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.venueRail}>
                 {data.venues.slice(1).map((venue) => (
-                  <VenueCard key={venue.id} onPress={() => handleOpenVenueDetail(venue)} venue={venue} />
+                  <VenueCard
+                    key={venue.id}
+                    onPress={() => handleOpenVenueDetail(venue)}
+                    saved={savedState.venueIds.includes(venue.id)}
+                    venue={venue}
+                  />
                 ))}
               </View>
             </ScrollView>
@@ -260,16 +303,74 @@ export function HomeScreen() {
           <TravelSignalCard signal={data.travelSignal} />
         </Reveal>
 
-        <Reveal delay={350} style={styles.section}>
+        {savedVenue || savedPerk || runSaved ? (
+          <Reveal delay={320} style={styles.section}>
+            <SectionHeader
+              actionLabel="Open trips"
+              eyebrow="Kept close"
+              onActionPress={() => router.push('/trips')}
+              subtitle="A few saved choices should tighten the next run, not create a collection to manage."
+              title="Saved for this run"
+            />
+            <Card variant="quiet">
+              <View style={styles.savedHeader}>
+                <View style={styles.savedBadges}>
+                  {runSaved ? <Badge label="Route saved" tone="forest" /> : null}
+                  {savedVenue ? <Badge label="Venue kept close" tone="neutral" /> : null}
+                  {savedPerk ? <Badge label="Perk saved" tone="brass" /> : null}
+                </View>
+              </View>
+              {savedVenue ? (
+                <Text style={styles.savedLine} variant="label">
+                  {savedVenue.name} stays visible for arrival in {savedVenue.district}.
+                </Text>
+              ) : null}
+              {savedPerk ? (
+                <Text color="muted">
+                  {savedPerk.title} will stay attached to the corridor instead of disappearing into a long benefits list.
+                </Text>
+              ) : null}
+              {!savedVenue && !savedPerk ? (
+                <Text color="muted">
+                  The route itself is pinned, so the next trip stays tight even before you pick a table.
+                </Text>
+              ) : null}
+            </Card>
+          </Reveal>
+        ) : null}
+
+        {latestSplit ? (
+          <Reveal delay={340} style={styles.section}>
+            <SectionHeader
+              actionLabel={latestSplitMoment?.actionLabel}
+              eyebrow="With your circle"
+              onActionPress={() => {
+                setSelectedSplit(latestSplit);
+                splitActivityRef.current?.present();
+              }}
+              subtitle={latestSplitMoment?.subtitle}
+              title={latestSplitMoment?.title ?? 'One table still moving'}
+            />
+            <SplitCard
+              onPress={() => {
+                setSelectedSplit(latestSplit);
+                splitActivityRef.current?.present();
+              }}
+              split={latestSplit}
+            />
+          </Reveal>
+        ) : null}
+
+        <Reveal delay={380} style={styles.section}>
           <SectionHeader
-            actionLabel="Open wallet"
-            eyebrow="With your circle"
-            onActionPress={() => router.push('/wallet')}
-            subtitle="Social movement belongs here before the full ledger does."
+            actionLabel={supportCount ? `${supportCount} request${supportCount > 1 ? 's' : ''} live` : 'Open wallet'}
+            eyebrow="Recent rhythm"
+            onActionPress={() => router.push(supportCount ? '/profile' : '/wallet')}
+            subtitle="The latest spend should stay short, legible, and easy to trust."
             title="Recent rhythm"
           />
           {homeMoments.length ? (
-            homeMoments.map((item) => <ActivityRow item={item} key={item.id} />)
+            homeMoments.map((item) => <ActivityRow item={item} key={item.id} onPress={() => handleOpenActivityDetail(item)} />)
           ) : (
             <EmptyState
               description="Dinner splits, partner spend, and corridor movement will show up here once you start using the network."
@@ -317,7 +418,82 @@ export function HomeScreen() {
         }
         ref={addMoneyRef}
       />
-      <VenueDetailSheet onPrimaryAction={handlePaySelectedVenue} perk={selectedPerk} ref={venueDetailRef} venue={selectedVenue} />
+      <ActivityDetailSheet
+        item={selectedActivity}
+        onSupportPress={() => {
+          activityDetailRef.current?.dismiss();
+          if (existingSupportPreview) {
+            setSelectedSupportPreview(existingSupportPreview);
+            supportRequestDetailRef.current?.present();
+            return;
+          }
+
+          supportIssueRef.current?.present();
+        }}
+        supportActionLabel={existingSupportPreview ? 'View support request' : 'Open support'}
+        ref={activityDetailRef}
+      />
+      <SupportIssueSheet
+        item={selectedActivity}
+        onSubmit={(reason) => {
+          supportIssueRef.current?.dismiss();
+          if (selectedActivity) {
+            const preview = createSupportPreview({
+              amount: selectedActivity.amount,
+              direction: selectedActivity.direction,
+              movementKind: selectedActivity.kind,
+              movementStatus: selectedActivity.status,
+              reason,
+              sourceActivityId: selectedActivity.id,
+              receiptSubtitle: selectedActivity.subtitle,
+              receiptTitle: selectedActivity.title,
+            });
+            setSelectedSupportPreview(preview);
+          }
+          supportRequestDetailRef.current?.present();
+          showToast({
+            title: 'Support request staged',
+            description: `${reason} is now attached to ${selectedActivity?.title ?? 'this receipt'} in the prototype.`,
+            tone: 'success',
+          });
+        }}
+        ref={supportIssueRef}
+      />
+      <SupportRequestDetailSheet preview={selectedSupportPreview} ref={supportRequestDetailRef} />
+      <SplitActivitySheet
+        onOpenSplit={() => {
+          if (!selectedSplit) {
+            return;
+          }
+
+          splitActivityRef.current?.dismiss();
+          router.push(`/split/${selectedSplit.id}`);
+        }}
+        ref={splitActivityRef}
+        split={selectedSplit}
+      />
+      <VenueDetailSheet
+        onPrimaryAction={handlePaySelectedVenue}
+        onToggleSaved={() => {
+          if (!selectedVenue) {
+            return;
+          }
+
+          const isSaved = savedState.venueIds.includes(selectedVenue.id);
+          toggleVenueSaved(selectedVenue.id);
+          showToast({
+            title: isSaved ? 'Venue removed' : 'Venue kept close',
+            description: isSaved
+              ? `${selectedVenue.name} is no longer pinned for this run.`
+              : `${selectedVenue.name} now stays visible across the corridor.`,
+            tone: 'success',
+          });
+        }}
+        perk={selectedPerk}
+        ref={venueDetailRef}
+        saved={selectedVenue ? savedState.venueIds.includes(selectedVenue.id) : false}
+        venue={selectedVenue}
+      />
     </>
   );
 }
@@ -386,5 +562,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 14,
     paddingRight: 20,
+  },
+  savedHeader: {
+    marginBottom: 10,
+  },
+  savedBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  savedLine: {
+    marginBottom: 6,
   },
 });

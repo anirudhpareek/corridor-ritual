@@ -59,6 +59,7 @@ export default function RootLayout() {
           }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="membership" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="split/[id]" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="pay/index" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="pay/confirm" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="pay/status" options={{ animation: 'fade_from_bottom' }} />

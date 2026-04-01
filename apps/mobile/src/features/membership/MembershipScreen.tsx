@@ -11,7 +11,7 @@ import { TravelSignalCard } from '../../components/TravelSignalCard';
 import { VenueDetailSheet } from '../../components/VenueDetailSheet';
 import { VenueCard } from '../../components/VenueCard';
 import { triggerHaptic } from '../../lib/haptics';
-import { useProfileQuery, useTripsQuery } from '../../lib/queries';
+import { useProfileQuery, useSavedStateQuery, useTripsQuery } from '../../lib/queries';
 import { useScenarioStore } from '../../lib/store/useScenarioStore';
 import { useTheme } from '../../theme';
 import { Badge } from '../../ui/Badge';
@@ -31,9 +31,13 @@ export function MembershipScreen() {
   const [selectedPerk, setSelectedPerk] = useState<Perk | null>(null);
   const profileQuery = useProfileQuery();
   const tripsQuery = useTripsQuery();
+  const savedStateQuery = useSavedStateQuery();
   const theme = useTheme();
   const setPayMerchant = useScenarioStore((state) => state.setPayMerchant);
   const setPayAmountText = useScenarioStore((state) => state.setPayAmountText);
+  const toggleVenueSaved = useScenarioStore((state) => state.toggleVenueSaved);
+  const togglePerkSaved = useScenarioStore((state) => state.togglePerkSaved);
+  const savedState = savedStateQuery.data ?? { perkIds: [], tripIds: [], venueIds: [] };
 
   const isLoading = profileQuery.isLoading || tripsQuery.isLoading;
   const isRefetching = profileQuery.isRefetching || tripsQuery.isRefetching;
@@ -193,6 +197,7 @@ export function MembershipScreen() {
                         <View style={styles.perkBadges}>
                           <Badge label={perk.label} tone="brass" />
                           <Badge label={perk.city} tone="forest" />
+                          {savedState.perkIds.includes(perk.id) ? <Badge label="Saved" tone="forest" /> : null}
                         </View>
                       </View>
                       <Text color="muted" style={styles.perkDescription}>
@@ -224,7 +229,12 @@ export function MembershipScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.venueRail}>
                 {trips.savedPlaces.map((venue) => (
-                  <VenueCard key={venue.id} onPress={() => handleOpenVenueDetail(venue)} venue={venue} />
+                  <VenueCard
+                    key={venue.id}
+                    onPress={() => handleOpenVenueDetail(venue)}
+                    saved={savedState.venueIds.includes(venue.id)}
+                    venue={venue}
+                  />
                 ))}
               </View>
             </ScrollView>
@@ -248,8 +258,34 @@ export function MembershipScreen() {
         ) : null}
       </Screen>
 
-      <PerkDetailSheet onPrimaryAction={handlePaySelectedVenue} perk={selectedPerk} ref={perkDetailRef} venue={selectedVenue} />
-      <VenueDetailSheet onPrimaryAction={handlePaySelectedVenue} perk={selectedPerk} ref={venueDetailRef} venue={selectedVenue} />
+      <PerkDetailSheet
+        onPrimaryAction={handlePaySelectedVenue}
+        onToggleSaved={() => {
+          if (!selectedPerk) {
+            return;
+          }
+
+          togglePerkSaved(selectedPerk.id);
+        }}
+        perk={selectedPerk}
+        ref={perkDetailRef}
+        saved={selectedPerk ? savedState.perkIds.includes(selectedPerk.id) : false}
+        venue={selectedVenue}
+      />
+      <VenueDetailSheet
+        onPrimaryAction={handlePaySelectedVenue}
+        onToggleSaved={() => {
+          if (!selectedVenue) {
+            return;
+          }
+
+          toggleVenueSaved(selectedVenue.id);
+        }}
+        perk={selectedPerk}
+        ref={venueDetailRef}
+        saved={selectedVenue ? savedState.venueIds.includes(selectedVenue.id) : false}
+        venue={selectedVenue}
+      />
     </>
   );
 }

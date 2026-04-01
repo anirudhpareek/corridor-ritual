@@ -1,6 +1,6 @@
 import type { ActivityItem } from '@corridor/domain';
 import { ArrowDownLeft, ArrowUpRight, CircleAlert, Clock3, ReceiptText } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatMoneySigned, formatRelativeTime, statusLabel } from '../lib/format';
 import { useTheme } from '../theme';
@@ -9,9 +9,10 @@ import { Text } from '../ui/Text';
 
 type Props = {
   item: ActivityItem;
+  onPress?: () => void;
 };
 
-export function ActivityRow({ item }: Props) {
+export function ActivityRow({ item, onPress }: Props) {
   const theme = useTheme();
   const Icon =
     item.status === 'failed'
@@ -27,11 +28,18 @@ export function ActivityRow({ item }: Props) {
       : item.status === 'pending'
         ? { backgroundColor: theme.colors.pendingSoft, foreground: theme.colors.pending }
         : item.direction === 'credit'
-          ? { backgroundColor: theme.colors.successSoft, foreground: theme.colors.success }
-          : { backgroundColor: theme.colors.elevated, foreground: theme.colors.primaryText };
+      ? { backgroundColor: theme.colors.successSoft, foreground: theme.colors.success }
+      : { backgroundColor: theme.colors.elevated, foreground: theme.colors.primaryText };
+  const Container = onPress ? Pressable : View;
 
   return (
-    <View style={[styles.row, { borderBottomColor: theme.colors.softLine }]}>
+    <Container
+      accessibilityHint={
+        onPress ? (item.kind === 'split' && item.relatedSplitId ? 'Opens split summary' : 'Opens receipt detail') : undefined
+      }
+      accessibilityRole={onPress ? 'button' : undefined}
+      onPress={onPress}
+      style={[styles.row, { borderBottomColor: theme.colors.softLine }]}>
       <View style={[styles.iconWrap, { backgroundColor: iconColors.backgroundColor }]}>
         <Icon color={iconColors.foreground} size={16} strokeWidth={1.75} />
       </View>
@@ -48,7 +56,7 @@ export function ActivityRow({ item }: Props) {
           tone={item.status === 'failed' ? 'danger' : item.status === 'pending' ? 'pending' : 'neutral'}
         />
       </View>
-    </View>
+    </Container>
   );
 }
 

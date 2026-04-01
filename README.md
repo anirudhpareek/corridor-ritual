@@ -28,11 +28,14 @@ Implemented interaction layers:
 
 - guest -> member preview -> verified spend state model
 - partner pay flow with confirm and status states
-- split follow-up from successful dinner receipts
+- first-class split flow with `/split/[id]`
+- split summary overlays from home and wallet activity
 - venue detail sheets
 - perk detail sheets
 - curated trip briefing
 - membership destination with city benefits and partner venues
+- receipt detail and receipt-linked support flow
+- repository seam between app queries and mock implementations
 
 Still mocked:
 
@@ -119,6 +122,7 @@ pnpm --filter mobile test
 - `/pay`
 - `/pay/confirm`
 - `/pay/status`
+- `/split/[id]`
 
 ## Design Direction
 
@@ -158,8 +162,8 @@ Known caveat:
 
 Likely next product/frontend steps:
 
-- receipt and activity detail sheets
-- stronger support / dispute flows
-- live provider integration behind the current contracts
+- route from saved venues/perks into more personalized corridor reminders
+- make split and support states optionally actionable from lightweight summary sheets
+- live provider integration behind the current contracts and repositories
 - admin / ops tooling in a separate app
 - replacing mocks with real data sources while preserving the current UX tone

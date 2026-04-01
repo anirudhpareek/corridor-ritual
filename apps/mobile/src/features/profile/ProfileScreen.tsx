@@ -6,11 +6,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MembershipStatusCard } from '../../components/MembershipStatusCard';
 import { OnboardingGateSheet } from '../../components/OnboardingGateSheet';
+import { SupportCenterSheet } from '../../components/SupportCenterSheet';
 import { TrustBanner } from '../../components/TrustBanner';
 import { VerificationPromptSheet } from '../../components/VerificationPromptSheet';
 import { VerificationStateChip } from '../../components/VerificationStateChip';
 import { triggerHaptic } from '../../lib/haptics';
-import { useProfileQuery } from '../../lib/queries';
+import { useProfileQuery, useSupportRequestsQuery } from '../../lib/queries';
 import { useToast } from '../../providers/ToastProvider';
 import { useTheme } from '../../theme';
 import { Banner } from '../../ui/Banner';
@@ -26,9 +27,12 @@ import { Text } from '../../ui/Text';
 export function ProfileScreen() {
   const onboardingRef = useRef<BottomSheetModal>(null);
   const verificationRef = useRef<BottomSheetModal>(null);
+  const supportCenterRef = useRef<BottomSheetModal>(null);
   const { data, error, isLoading, isRefetching, refetch } = useProfileQuery();
+  const supportQuery = useSupportRequestsQuery();
   const { showToast } = useToast();
   const theme = useTheme();
+  const supportPreviews = supportQuery.data ?? [];
 
   const handlePrimaryAction = () => {
     void triggerHaptic('soft');
@@ -228,17 +232,14 @@ export function ProfileScreen() {
         <Reveal delay={340} style={styles.section}>
           <Pressable
             accessibilityRole="button"
-            onPress={() =>
-              showToast({
-                title: 'Support preview',
-                description: 'Ticketing and dispute detail stay intentionally light in this slice.',
-              })
-            }
+            onPress={() => supportCenterRef.current?.present()}
             style={[styles.supportRow, { borderColor: theme.colors.softLine, backgroundColor: theme.colors.elevated }]}>
             <View style={styles.supportCopy}>
               <Text variant="label">Open help and receipts</Text>
               <Text color="muted">
-                Corridor receipts, refunds, and venue issues would route through this support surface next.
+                {supportPreviews.length
+                  ? `${supportPreviews.length} receipt-linked request${supportPreviews.length > 1 ? 's' : ''} already attached here.`
+                  : 'Corridor receipts, refunds, and venue issues would route through this support surface next.'}
               </Text>
             </View>
             <ChevronRight color={theme.colors.mutedText} size={16} strokeWidth={2} />
@@ -273,6 +274,7 @@ export function ProfileScreen() {
         }
         ref={verificationRef}
       />
+      <SupportCenterSheet detail={data.supportDetail} headline={data.supportStatus} previews={supportPreviews} ref={supportCenterRef} />
     </>
   );
 }

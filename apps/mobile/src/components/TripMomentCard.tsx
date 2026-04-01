@@ -11,9 +11,10 @@ import { Text } from '../ui/Text';
 type Props = {
   moment: TripMoment;
   onSave: () => void;
+  saved?: boolean;
 };
 
-export function TripMomentCard({ moment, onSave }: Props) {
+export function TripMomentCard({ moment, onSave, saved = false }: Props) {
   const theme = useTheme();
 
   return (
@@ -69,7 +70,7 @@ export function TripMomentCard({ moment, onSave }: Props) {
         <Text style={styles.ritualCopy}>{moment.ritual}</Text>
       </View>
 
-      <Button label="Save this run" onPress={onSave} variant="secondary" />
+      <Button label={saved ? 'Run saved' : 'Save this run'} onPress={onSave} variant="secondary" />
     </Card>
   );
 }

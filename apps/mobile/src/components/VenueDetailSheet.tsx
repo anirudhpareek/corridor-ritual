@@ -15,7 +15,9 @@ import { Text } from '../ui/Text';
 
 type Props = {
   onPrimaryAction: () => void;
+  onToggleSaved?: () => void;
   perk: Perk | null;
+  saved?: boolean;
   venue: Venue | null;
 };
 
@@ -36,7 +38,7 @@ function corridorNoteForVenue(venue: Venue) {
 }
 
 export const VenueDetailSheet = forwardRef<BottomSheetModal, Props>(function VenueDetailSheet(
-  { onPrimaryAction, perk, venue },
+  { onPrimaryAction, onToggleSaved, perk, saved = false, venue },
   ref,
 ) {
   const theme = useTheme();
@@ -139,7 +141,12 @@ export const VenueDetailSheet = forwardRef<BottomSheetModal, Props>(function Ven
           </View>
         )}
 
-        <Button label="Pay this partner" onPress={onPrimaryAction} />
+        <View style={styles.actions}>
+          <Button label="Pay this partner" onPress={onPrimaryAction} />
+          {onToggleSaved ? (
+            <Button label={saved ? 'Saved for this run' : 'Save for this run'} onPress={onToggleSaved} variant="secondary" />
+          ) : null}
+        </View>
       </View>
     </Sheet>
   );
@@ -222,6 +229,9 @@ const styles = StyleSheet.create({
   perkFallbackRow: {
     alignItems: 'flex-start',
     flexDirection: 'row',
+    gap: 10,
+  },
+  actions: {
     gap: 10,
   },
 });

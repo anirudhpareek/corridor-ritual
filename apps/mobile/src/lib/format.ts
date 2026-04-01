@@ -50,6 +50,21 @@ export function formatRelativeTime(isoDate: string) {
   return `${days}d ago`;
 }
 
+export function formatTimestamp(isoDate: string) {
+  const value = new Date(isoDate);
+
+  if (Number.isNaN(value.getTime())) {
+    return 'Recently';
+  }
+
+  return new Intl.DateTimeFormat('en-AE', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(value);
+}
+
 export function titleCase(value: string) {
   return value.replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
 }

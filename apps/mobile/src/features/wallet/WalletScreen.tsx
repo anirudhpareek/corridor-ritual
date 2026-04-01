@@ -1,17 +1,24 @@
+import type { ActivityItem, SplitRequest, SupportRequestPreview } from '@corridor/domain';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { router } from 'expo-router';
 import { Compass, ShieldCheck } from 'lucide-react-native';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ActivityRow } from '../../components/ActivityRow';
+import { ActivityDetailSheet } from '../../components/ActivityDetailSheet';
 import { AddMoneySheet } from '../../components/AddMoneySheet';
 import { BalanceCard } from '../../components/BalanceCard';
 import { OnboardingGateSheet } from '../../components/OnboardingGateSheet';
 import { PendingStateBlock } from '../../components/PendingStateBlock';
+import { SupportIssueSheet } from '../../components/SupportIssueSheet';
+import { SupportRequestDetailSheet } from '../../components/SupportRequestDetailSheet';
+import { SplitActivitySheet } from '../../components/SplitActivitySheet';
 import { TrustBanner } from '../../components/TrustBanner';
 import { VerificationPromptSheet } from '../../components/VerificationPromptSheet';
 import { triggerHaptic } from '../../lib/haptics';
-import { useWalletQuery } from '../../lib/queries';
+import { useSplitRequestsQuery, useSupportRequestsQuery, useWalletQuery } from '../../lib/queries';
+import { useScenarioStore } from '../../lib/store/useScenarioStore';
 import { useToast } from '../../providers/ToastProvider';
 import { useTheme } from '../../theme';
 import { EmptyState } from '../../ui/EmptyState';
@@ -25,9 +32,23 @@ export function WalletScreen() {
   const addMoneyRef = useRef<BottomSheetModal>(null);
   const onboardingRef = useRef<BottomSheetModal>(null);
   const verificationRef = useRef<BottomSheetModal>(null);
+  const activityDetailRef = useRef<BottomSheetModal>(null);
+  const supportIssueRef = useRef<BottomSheetModal>(null);
+  const splitActivityRef = useRef<BottomSheetModal>(null);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+  const [selectedSplit, setSelectedSplit] = useState<SplitRequest | null>(null);
+  const [selectedSupportPreview, setSelectedSupportPreview] = useState<SupportRequestPreview | null>(null);
+  const supportRequestDetailRef = useRef<BottomSheetModal>(null);
   const { showToast } = useToast();
   const { data, error, isLoading, isRefetching, refetch } = useWalletQuery();
+  const supportQuery = useSupportRequestsQuery();
+  const splitQuery = useSplitRequestsQuery();
   const theme = useTheme();
+  const createSupportPreview = useScenarioStore((state) => state.createSupportPreview);
+  const supportPreviews = supportQuery.data ?? [];
+  const supportCount = supportPreviews.length;
+  const existingSupportPreview =
+    selectedActivity ? supportPreviews.find((preview) => preview.sourceActivityId === selectedActivity.id) ?? null : null;
 
   const openFunding = () => {
     void triggerHaptic('soft');
@@ -51,6 +72,27 @@ export function WalletScreen() {
     }
 
     addMoneyRef.current?.present();
+  };
+
+  const handleOpenActivityDetail = (item: ActivityItem) => {
+    if (item.kind === 'split' && item.relatedSplitId) {
+      void triggerHaptic('soft');
+      const relatedSplit = splitQuery.data?.find((split) => split.id === item.relatedSplitId) ?? null;
+
+      if (relatedSplit) {
+        setSelectedSplit(relatedSplit);
+        splitActivityRef.current?.present();
+        return;
+      }
+
+      router.push(`/split/${item.relatedSplitId}`);
+      return;
+    }
+
+    void triggerHaptic('soft');
+    setSelectedSupportPreview(null);
+    setSelectedActivity(item);
+    activityDetailRef.current?.present();
   };
 
   if (isLoading) {
@@ -117,9 +159,15 @@ export function WalletScreen() {
         ) : null}
 
         <Reveal delay={240} style={styles.section}>
-          <SectionHeader eyebrow="Trusted movement" subtitle="Only the states that matter should show up here." title="Recent activity" />
+          <SectionHeader
+            actionLabel={supportCount ? `${supportCount} request${supportCount > 1 ? 's' : ''} live` : undefined}
+            eyebrow="Trusted movement"
+            onActionPress={supportCount ? () => router.push('/profile') : undefined}
+            subtitle="Only the states that matter should show up here."
+            title="Recent activity"
+          />
           {data.activity.length ? (
-            data.activity.map((item) => <ActivityRow item={item} key={item.id} />)
+            data.activity.map((item) => <ActivityRow item={item} key={item.id} onPress={() => handleOpenActivityDetail(item)} />)
           ) : (
             <EmptyState
               actionLabel={
@@ -192,6 +240,60 @@ export function WalletScreen() {
           })
         }
         ref={addMoneyRef}
+      />
+      <ActivityDetailSheet
+        item={selectedActivity}
+        onSupportPress={() => {
+          activityDetailRef.current?.dismiss();
+          if (existingSupportPreview) {
+            setSelectedSupportPreview(existingSupportPreview);
+            supportRequestDetailRef.current?.present();
+            return;
+          }
+
+          supportIssueRef.current?.present();
+        }}
+        supportActionLabel={existingSupportPreview ? 'View support request' : 'Open support'}
+        ref={activityDetailRef}
+      />
+      <SupportIssueSheet
+        item={selectedActivity}
+        onSubmit={(reason) => {
+          supportIssueRef.current?.dismiss();
+          if (selectedActivity) {
+            const preview = createSupportPreview({
+              amount: selectedActivity.amount,
+              direction: selectedActivity.direction,
+              movementKind: selectedActivity.kind,
+              movementStatus: selectedActivity.status,
+              reason,
+              sourceActivityId: selectedActivity.id,
+              receiptSubtitle: selectedActivity.subtitle,
+              receiptTitle: selectedActivity.title,
+            });
+            setSelectedSupportPreview(preview);
+          }
+          supportRequestDetailRef.current?.present();
+          showToast({
+            title: 'Support request staged',
+            description: `${reason} is now attached to ${selectedActivity?.title ?? 'this receipt'} in the prototype.`,
+            tone: 'success',
+          });
+        }}
+        ref={supportIssueRef}
+      />
+      <SupportRequestDetailSheet preview={selectedSupportPreview} ref={supportRequestDetailRef} />
+      <SplitActivitySheet
+        onOpenSplit={() => {
+          if (!selectedSplit) {
+            return;
+          }
+
+          splitActivityRef.current?.dismiss();
+          router.push(`/split/${selectedSplit.id}`);
+        }}
+        ref={splitActivityRef}
+        split={selectedSplit}
       />
     </>
   );

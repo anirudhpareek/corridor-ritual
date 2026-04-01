@@ -1,4 +1,4 @@
-import type { ActivityItem, MockScenario, PaymentDraft, PaymentReceipt } from '@corridor/domain';
+import type { MockScenario, PaymentDraft, PaymentReceipt, SavedState, SplitRequest, SupportRequestPreview } from '@corridor/domain';
 
 import { useScenarioStore } from '../lib/store/useScenarioStore';
 
@@ -8,7 +8,9 @@ type ScenarioStateOverrides = Partial<{
   payDraft: PaymentDraft;
   queuedTopUpAmount: number | null;
   scenario: MockScenario;
-  splitPreviewActivity: ActivityItem | null;
+  splitRequests: SplitRequest[];
+  supportPreviews: SupportRequestPreview[];
+  savedState: SavedState;
 }>;
 
 export function resetScenarioStore(overrides: ScenarioStateOverrides = {}) {
@@ -21,7 +23,13 @@ export function resetScenarioStore(overrides: ScenarioStateOverrides = {}) {
     },
     queuedTopUpAmount: null,
     scenario: 'guest',
-    splitPreviewActivity: null,
+    splitRequests: [],
+    savedState: {
+      perkIds: [],
+      tripIds: [],
+      venueIds: [],
+    },
+    supportPreviews: [],
     ...overrides,
   });
 }

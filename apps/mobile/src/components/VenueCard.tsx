@@ -11,9 +11,10 @@ import { Text } from '../ui/Text';
 type Props = {
   venue: Venue;
   onPress?: () => void;
+  saved?: boolean;
 };
 
-export function VenueCard({ onPress, venue }: Props) {
+export function VenueCard({ onPress, saved = false, venue }: Props) {
   const theme = useTheme();
   const tone = getVenueTonePalette(venue.imageTone, theme);
 
@@ -42,6 +43,7 @@ export function VenueCard({ onPress, venue }: Props) {
         <View style={styles.badgeRow}>
           <Badge label={venue.category} tone={venue.imageTone === 'forest' ? 'forest' : venue.imageTone === 'sand' ? 'brass' : 'neutral'} />
           {venue.featuredPerkId ? <Badge label="Perk live" tone="brass" /> : null}
+          {saved ? <Badge label="Saved" tone="forest" /> : null}
         </View>
         <Text style={styles.name} variant="title">
           {venue.name}
