@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { useScenarioStore } from '../../../lib/store/useScenarioStore';
 import { resetScenarioStore } from '../../../test-fixtures/resetScenarioStore';
@@ -44,5 +44,31 @@ describe('MembershipScreen', () => {
     expect(await screen.findByText('Guest')).toBeTruthy();
     expect(screen.getByText('Join the network')).toBeTruthy();
     expect(screen.getByText('Useful in Dubai')).toBeTruthy();
+  });
+
+  it('opens the saved perk from the membership action rail', async () => {
+    useScenarioStore.setState({
+      savedState: {
+        perkIds: ['perk_1'],
+        tripIds: ['next_trip_1'],
+        venueIds: ['venue_1'],
+      },
+      scenario: 'verified',
+    });
+
+    renderWithProviders(<MembershipScreen />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+
+    expect(await screen.findByText('Open saved perk')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Open saved perk'));
+    });
+
+    expect((await screen.findAllByText('Member perk')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Arrival supper').length).toBeGreaterThanOrEqual(1);
   });
 });

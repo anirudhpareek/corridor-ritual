@@ -41,6 +41,8 @@ export function TripsScreen() {
   const togglePerkSaved = useScenarioStore((state) => state.togglePerkSaved);
   const toggleTripSaved = useScenarioStore((state) => state.toggleTripSaved);
   const savedState = savedStateQuery.data ?? { perkIds: [], tripIds: [], venueIds: [] };
+  const savedVenue = data?.savedPlaces.find((venue) => savedState.venueIds.includes(venue.id)) ?? null;
+  const savedPerk = data?.cityPerks.find((perk) => savedState.perkIds.includes(perk.id)) ?? null;
 
   const trustTone =
     data?.user.memberState === 'guest'
@@ -190,9 +192,16 @@ export function TripsScreen() {
 
       <Reveal delay={200} style={styles.section}>
         <SectionHeader
-          actionLabel={data.savedPlaces.length ? 'Pay a partner' : undefined}
+          actionLabel={savedVenue ? 'Open saved place' : data.savedPlaces.length ? 'Pay a partner' : undefined}
           eyebrow="Saved for this city"
-          onActionPress={() => router.push('/pay')}
+          onActionPress={() => {
+            if (savedVenue) {
+              handleOpenVenueDetail(savedVenue);
+              return;
+            }
+
+            router.push('/pay');
+          }}
           subtitle="Only the places that matter on repeat trips should survive here."
           title="Ready on arrival"
         />
@@ -219,7 +228,9 @@ export function TripsScreen() {
 
       <Reveal delay={260} style={styles.section}>
         <SectionHeader
+          actionLabel={savedPerk ? 'Open saved perk' : undefined}
           eyebrow="City benefits"
+          onActionPress={savedPerk ? () => handleOpenPerkDetail(savedPerk) : undefined}
           subtitle="Perks should feel like treatment in a city, not points mechanics."
           title="Useful this run"
         />

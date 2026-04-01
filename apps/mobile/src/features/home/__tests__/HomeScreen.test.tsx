@@ -232,4 +232,30 @@ describe('HomeScreen', () => {
 
     expect(await screen.findByText('1 request live')).toBeTruthy();
   });
+
+  it('opens the saved venue from the kept-close module', async () => {
+    useScenarioStore.setState({
+      savedState: {
+        perkIds: ['perk_1'],
+        tripIds: ['trip_1'],
+        venueIds: ['venue_1'],
+      },
+      scenario: 'verified',
+    });
+
+    renderWithProviders(<HomeScreen />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+
+    expect(await screen.findByText('Open saved place')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Open saved place'));
+    });
+
+    expect((await screen.findAllByText('Partner venue')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Jun['’]s Table/).length).toBeGreaterThanOrEqual(1);
+  });
 });

@@ -11,6 +11,7 @@ import { AddMoneySheet } from '../../components/AddMoneySheet';
 import { CityMomentCard } from '../../components/CityMomentCard';
 import { MembershipStatusCard } from '../../components/MembershipStatusCard';
 import { OnboardingGateSheet } from '../../components/OnboardingGateSheet';
+import { PerkDetailSheet } from '../../components/PerkDetailSheet';
 import { SplitCard } from '../../components/SplitCard';
 import { SplitActivitySheet } from '../../components/SplitActivitySheet';
 import { TravelSignalCard } from '../../components/TravelSignalCard';
@@ -41,6 +42,7 @@ export function HomeScreen() {
   const onboardingRef = useRef<BottomSheetModal>(null);
   const verificationRef = useRef<BottomSheetModal>(null);
   const venueDetailRef = useRef<BottomSheetModal>(null);
+  const perkDetailRef = useRef<BottomSheetModal>(null);
   const activityDetailRef = useRef<BottomSheetModal>(null);
   const supportIssueRef = useRef<BottomSheetModal>(null);
   const supportRequestDetailRef = useRef<BottomSheetModal>(null);
@@ -60,6 +62,7 @@ export function HomeScreen() {
   const setPayMerchant = useScenarioStore((state) => state.setPayMerchant);
   const setPayAmountText = useScenarioStore((state) => state.setPayAmountText);
   const createSupportPreview = useScenarioStore((state) => state.createSupportPreview);
+  const togglePerkSaved = useScenarioStore((state) => state.togglePerkSaved);
   const toggleVenueSaved = useScenarioStore((state) => state.toggleVenueSaved);
 
   const trustTone =
@@ -125,6 +128,18 @@ export function HomeScreen() {
     setSelectedVenue(venue);
     setSelectedPerk(data.perks.find((perk) => perk.id === venue.featuredPerkId) ?? null);
     venueDetailRef.current?.present();
+  };
+
+  const handleOpenPerkDetail = (perk: Perk) => {
+    if (!data) {
+      return;
+    }
+
+    void triggerHaptic('soft');
+    const associatedVenue = data.venues.find((venue) => venue.featuredPerkId === perk.id) ?? null;
+    setSelectedPerk(perk);
+    setSelectedVenue(associatedVenue);
+    perkDetailRef.current?.present();
   };
 
   const handlePaySelectedVenue = () => {
@@ -306,9 +321,21 @@ export function HomeScreen() {
         {savedVenue || savedPerk || runSaved ? (
           <Reveal delay={320} style={styles.section}>
             <SectionHeader
-              actionLabel="Open trips"
+              actionLabel={savedVenue ? 'Open saved place' : savedPerk ? 'Open saved perk' : 'Open trips'}
               eyebrow="Kept close"
-              onActionPress={() => router.push('/trips')}
+              onActionPress={() => {
+                if (savedVenue) {
+                  handleOpenVenueDetail(savedVenue);
+                  return;
+                }
+
+                if (savedPerk) {
+                  handleOpenPerkDetail(savedPerk);
+                  return;
+                }
+
+                router.push('/trips');
+              }}
               subtitle="A few saved choices should tighten the next run, not create a collection to manage."
               title="Saved for this run"
             />
@@ -460,6 +487,28 @@ export function HomeScreen() {
         ref={supportIssueRef}
       />
       <SupportRequestDetailSheet preview={selectedSupportPreview} ref={supportRequestDetailRef} />
+      <PerkDetailSheet
+        onPrimaryAction={handlePaySelectedVenue}
+        onToggleSaved={() => {
+          if (!selectedPerk) {
+            return;
+          }
+
+          const isSaved = savedState.perkIds.includes(selectedPerk.id);
+          togglePerkSaved(selectedPerk.id);
+          showToast({
+            title: isSaved ? 'Perk removed' : 'Perk kept close',
+            description: isSaved
+              ? `${selectedPerk.title} is no longer pinned for this run.`
+              : `${selectedPerk.title} now stays visible across the corridor.`,
+            tone: 'success',
+          });
+        }}
+        perk={selectedPerk}
+        ref={perkDetailRef}
+        saved={selectedPerk ? savedState.perkIds.includes(selectedPerk.id) : false}
+        venue={selectedVenue}
+      />
       <SplitActivitySheet
         onOpenSplit={() => {
           if (!selectedSplit) {

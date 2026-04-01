@@ -44,6 +44,8 @@ export function MembershipScreen() {
   const error = profileQuery.error || tripsQuery.error;
   const profile = profileQuery.data;
   const trips = tripsQuery.data;
+  const savedVenue = trips?.savedPlaces.find((venue) => savedState.venueIds.includes(venue.id)) ?? null;
+  const savedPerk = trips?.cityPerks.find((perk) => savedState.perkIds.includes(perk.id)) ?? null;
 
   const handleRefresh = () => {
     void profileQuery.refetch();
@@ -173,7 +175,9 @@ export function MembershipScreen() {
 
         <Reveal delay={160} style={styles.section}>
           <SectionHeader
+            actionLabel={savedPerk ? 'Open saved perk' : undefined}
             eyebrow="Useful now"
+            onActionPress={savedPerk ? () => handleOpenPerkDetail(savedPerk) : undefined}
             subtitle="Benefits should read like treatment in a city, not a rewards program."
             title={`Useful in ${profile.user.currentCity}`}
           />
@@ -219,9 +223,16 @@ export function MembershipScreen() {
 
         <Reveal delay={220} style={styles.section}>
           <SectionHeader
-            actionLabel="Pay a partner"
+            actionLabel={savedVenue ? 'Open saved place' : 'Pay a partner'}
             eyebrow="Partner venues"
-            onActionPress={() => router.push('/pay')}
+            onActionPress={() => {
+              if (savedVenue) {
+                handleOpenVenueDetail(savedVenue);
+                return;
+              }
+
+              router.push('/pay');
+            }}
             subtitle="The network should feel curated enough that a few places carry the trip."
             title="Places that still matter"
           />

@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { useScenarioStore } from '../../../lib/store/useScenarioStore';
 import { resetScenarioStore } from '../../../test-fixtures/resetScenarioStore';
@@ -65,5 +65,31 @@ describe('TripsScreen', () => {
 
     expect(await screen.findByText('Run saved')).toBeTruthy();
     expect(screen.getAllByText('Saved').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('opens the saved venue from the arrival section action', async () => {
+    useScenarioStore.setState({
+      savedState: {
+        perkIds: ['perk_1'],
+        tripIds: ['next_trip_1'],
+        venueIds: ['venue_1'],
+      },
+      scenario: 'verified',
+    });
+
+    renderWithProviders(<TripsScreen />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+
+    expect(await screen.findByText('Open saved place')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Open saved place'));
+    });
+
+    expect((await screen.findAllByText('Partner venue')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Jun['’]s Table/).length).toBeGreaterThanOrEqual(1);
   });
 });
