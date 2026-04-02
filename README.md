@@ -32,6 +32,8 @@ Implemented interaction layers:
 - split summary overlays from home and wallet activity
 - venue detail sheets
 - perk detail sheets
+- saved venue / perk action rails across home, trips, and membership
+- tonight reminder flow that pins one saved move back onto home
 - curated trip briefing
 - membership destination with city benefits and partner venues
 - receipt detail and receipt-linked support flow
@@ -162,7 +164,7 @@ Known caveat:
 
 Likely next product/frontend steps:
 
-- route from saved venues/perks into more personalized corridor reminders
+- make the tonight reminder more time-aware based on actual arrival/trip context
 - make split and support states optionally actionable from lightweight summary sheets
 - live provider integration behind the current contracts and repositories
 - admin / ops tooling in a separate app
