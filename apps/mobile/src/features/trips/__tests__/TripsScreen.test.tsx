@@ -12,7 +12,9 @@ describe('TripsScreen', () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
     jest.clearAllTimers();
     jest.useRealTimers();
   });
@@ -91,5 +93,37 @@ describe('TripsScreen', () => {
 
     expect((await screen.findAllByText('Partner venue')).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/Jun['’]s Table/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('sets a tonight reminder from the saved venue detail', async () => {
+    useScenarioStore.setState({
+      savedState: {
+        perkIds: ['perk_1'],
+        tripIds: ['next_trip_1'],
+        venueIds: ['venue_1'],
+      },
+      scenario: 'verified',
+    });
+
+    renderWithProviders(<TripsScreen />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+
+    expect(await screen.findByText('Open saved place')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Open saved place'));
+    });
+
+    expect((await screen.findAllByText('Set for tonight')).length).toBeGreaterThanOrEqual(1);
+
+    await act(async () => {
+      fireEvent.press(screen.getAllByText('Set for tonight')[0]);
+    });
+
+    expect(useScenarioStore.getState().runReminder?.venueId).toBe('venue_1');
+    expect(useScenarioStore.getState().runReminder?.perkId).toBe('perk_1');
   });
 });

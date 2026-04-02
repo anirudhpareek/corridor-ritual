@@ -11,8 +11,9 @@ import { TravelSignalCard } from '../../components/TravelSignalCard';
 import { VenueDetailSheet } from '../../components/VenueDetailSheet';
 import { VenueCard } from '../../components/VenueCard';
 import { triggerHaptic } from '../../lib/haptics';
-import { useProfileQuery, useSavedStateQuery, useTripsQuery } from '../../lib/queries';
+import { useProfileQuery, useRunReminderQuery, useSavedStateQuery, useTripsQuery } from '../../lib/queries';
 import { useScenarioStore } from '../../lib/store/useScenarioStore';
+import { useToast } from '../../providers/ToastProvider';
 import { useTheme } from '../../theme';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -32,12 +33,16 @@ export function MembershipScreen() {
   const profileQuery = useProfileQuery();
   const tripsQuery = useTripsQuery();
   const savedStateQuery = useSavedStateQuery();
+  const runReminderQuery = useRunReminderQuery();
   const theme = useTheme();
+  const { showToast } = useToast();
   const setPayMerchant = useScenarioStore((state) => state.setPayMerchant);
   const setPayAmountText = useScenarioStore((state) => state.setPayAmountText);
+  const setRunReminder = useScenarioStore((state) => state.setRunReminder);
   const toggleVenueSaved = useScenarioStore((state) => state.toggleVenueSaved);
   const togglePerkSaved = useScenarioStore((state) => state.togglePerkSaved);
   const savedState = savedStateQuery.data ?? { perkIds: [], tripIds: [], venueIds: [] };
+  const runReminder = runReminderQuery.data;
 
   const isLoading = profileQuery.isLoading || tripsQuery.isLoading;
   const isRefetching = profileQuery.isRefetching || tripsQuery.isRefetching;
@@ -72,6 +77,28 @@ export function MembershipScreen() {
     perkDetailRef.current?.dismiss();
     venueDetailRef.current?.dismiss();
     router.push(selectedVenue ? '/pay/confirm' : '/pay');
+  };
+
+  const handleSetReminder = () => {
+    if (!selectedVenue && !selectedPerk) {
+      return;
+    }
+
+    void triggerHaptic('soft');
+    setRunReminder({
+      id: `reminder_${selectedVenue?.id ?? selectedPerk?.id ?? 'corridor'}`,
+      city: profile?.user.currentCity ?? 'Dubai',
+      perkId: selectedPerk?.id ?? null,
+      setAt: new Date().toISOString(),
+      venueId: selectedVenue?.id ?? null,
+    });
+    perkDetailRef.current?.dismiss();
+    venueDetailRef.current?.dismiss();
+    showToast({
+      title: 'Tonight is ready',
+      description: `${selectedVenue?.name ?? selectedPerk?.title ?? 'This corridor move'} now stays pinned back on Home for this run.`,
+      tone: 'success',
+    });
   };
 
   const handleOpenPerkDetail = (perk: Perk) => {
@@ -271,6 +298,7 @@ export function MembershipScreen() {
 
       <PerkDetailSheet
         onPrimaryAction={handlePaySelectedVenue}
+        onSetReminder={handleSetReminder}
         onToggleSaved={() => {
           if (!selectedPerk) {
             return;
@@ -280,11 +308,13 @@ export function MembershipScreen() {
         }}
         perk={selectedPerk}
         ref={perkDetailRef}
+        reminderSet={selectedPerk ? runReminder?.perkId === selectedPerk.id : false}
         saved={selectedPerk ? savedState.perkIds.includes(selectedPerk.id) : false}
         venue={selectedVenue}
       />
       <VenueDetailSheet
         onPrimaryAction={handlePaySelectedVenue}
+        onSetReminder={handleSetReminder}
         onToggleSaved={() => {
           if (!selectedVenue) {
             return;
@@ -294,6 +324,7 @@ export function MembershipScreen() {
         }}
         perk={selectedPerk}
         ref={venueDetailRef}
+        reminderSet={selectedVenue ? runReminder?.venueId === selectedVenue.id : false}
         saved={selectedVenue ? savedState.venueIds.includes(selectedVenue.id) : false}
         venue={selectedVenue}
       />

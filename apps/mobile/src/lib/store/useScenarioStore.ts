@@ -1,4 +1,4 @@
-import type { MockScenario, PaymentDraft, PaymentReceipt, SavedState, SplitParticipant, SplitRequest, SupportRequestPreview } from '@corridor/domain';
+import type { MockScenario, PaymentDraft, PaymentReceipt, RunReminder, SavedState, SplitParticipant, SplitRequest, SupportRequestPreview } from '@corridor/domain';
 import { create } from 'zustand';
 
 const suggestedGuests = ['Rohan', 'Maya', 'Sara', 'Dev', 'Isha'] as const;
@@ -61,6 +61,7 @@ type ScenarioStore = {
   splitRequests: SplitRequest[];
   supportPreviews: SupportRequestPreview[];
   savedState: SavedState;
+  runReminder: RunReminder | null;
   dismissedBannerIds: string[];
   setScenario: (scenario: MockScenario) => void;
   dismissBanner: (id: string) => void;
@@ -89,6 +90,8 @@ type ScenarioStore = {
   toggleVenueSaved: (venueId: string) => void;
   togglePerkSaved: (perkId: string) => void;
   toggleTripSaved: (tripId: string) => void;
+  setRunReminder: (reminder: RunReminder | null) => void;
+  clearRunReminder: () => void;
   clearSplitRequests: () => void;
   clearSupportPreviews: () => void;
   resetSavedState: () => void;
@@ -103,6 +106,7 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
   splitRequests: [],
   supportPreviews: [],
   savedState: initialSavedState,
+  runReminder: null,
   dismissedBannerIds: [],
   setScenario: (scenario) =>
     set((state) => ({
@@ -250,6 +254,8 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
           : [...state.savedState.tripIds, tripId],
       },
     })),
+  setRunReminder: (reminder) => set({ runReminder: reminder }),
+  clearRunReminder: () => set({ runReminder: null }),
   clearSplitRequests: () => set({ splitRequests: [] }),
   clearSupportPreviews: () => set({ supportPreviews: [] }),
   resetSavedState: () => set({ savedState: initialSavedState }),

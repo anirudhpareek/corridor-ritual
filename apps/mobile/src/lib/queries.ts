@@ -117,6 +117,18 @@ export function useSavedStateQuery() {
   });
 }
 
+export function useRunReminderQuery() {
+  const runReminder = useScenarioStore((state) => state.runReminder);
+
+  return useQuery({
+    queryKey: ['run-reminder', runReminder],
+    queryFn: () =>
+      repositories.reminder.getRunReminder({
+        reminder: runReminder,
+      }),
+  });
+}
+
 export function useQuotePayment() {
   const scenario = useScenarioStore((state) => state.scenario);
 

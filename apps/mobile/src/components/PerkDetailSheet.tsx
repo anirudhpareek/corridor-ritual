@@ -13,14 +13,16 @@ import { Text } from '../ui/Text';
 
 type Props = {
   perk: Perk | null;
+  onSetReminder?: () => void;
   onToggleSaved?: () => void;
+  reminderSet?: boolean;
   venue: Venue | null;
   onPrimaryAction: () => void;
   saved?: boolean;
 };
 
 export const PerkDetailSheet = forwardRef<BottomSheetModal, Props>(function PerkDetailSheet(
-  { onPrimaryAction, onToggleSaved, perk, saved = false, venue },
+  { onPrimaryAction, onSetReminder, onToggleSaved, perk, reminderSet = false, saved = false, venue },
   ref,
 ) {
   const theme = useTheme();
@@ -85,6 +87,18 @@ export const PerkDetailSheet = forwardRef<BottomSheetModal, Props>(function Perk
               : 'This perk is held for partner venues already inside the network.'}
           </Text>
         </View>
+
+        {onSetReminder ? (
+          <View style={[styles.partnerBlock, { backgroundColor: theme.colors.sheet, borderColor: theme.colors.softLine }]}>
+            <Text color="muted" variant="caption">
+              Tonight cue
+            </Text>
+            <Text color="muted" style={styles.partnerCopy}>
+              Keep this perk pinned back on Home so the next arrival still has one quiet member move in view.
+            </Text>
+            <Button label={reminderSet ? 'Tonight is ready' : 'Set for tonight'} onPress={onSetReminder} variant="quiet" />
+          </View>
+        ) : null}
 
         <View style={styles.actions}>
           <Button label={venue ? 'Use this perk' : 'Open partners'} onPress={onPrimaryAction} />

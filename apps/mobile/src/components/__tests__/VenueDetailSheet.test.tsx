@@ -10,6 +10,7 @@ describe('VenueDetailSheet', () => {
     const { getByText } = renderWithProviders(
       <VenueDetailSheet
         onPrimaryAction={() => undefined}
+        onSetReminder={() => undefined}
         perk={{
           category: 'dining',
           city: 'Dubai',
@@ -28,6 +29,7 @@ describe('VenueDetailSheet', () => {
     expect(getByText("Jun's Table")).toBeTruthy();
     expect(getByText('Why it stays in the corridor')).toBeTruthy();
     expect(getByText('Arrival supper')).toBeTruthy();
+    expect(getByText('Set for tonight')).toBeTruthy();
     expect(getByText('Pay this partner')).toBeTruthy();
   });
 });

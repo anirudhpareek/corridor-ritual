@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { useScenarioStore } from '../../../lib/store/useScenarioStore';
@@ -12,6 +13,7 @@ describe('HomeScreen', () => {
   });
 
   afterEach(() => {
+    jest.clearAllMocks();
     jest.runOnlyPendingTimers();
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -257,5 +259,34 @@ describe('HomeScreen', () => {
 
     expect((await screen.findAllByText('Partner venue')).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/Jun['’]s Table/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('turns a tonight reminder into a prefilled pay intent', async () => {
+    useScenarioStore.setState({
+      runReminder: {
+        city: 'Dubai',
+        id: 'reminder_venue_1',
+        perkId: 'perk_1',
+        setAt: '2026-04-02T12:15:00.000Z',
+        venueId: 'venue_1',
+      },
+      scenario: 'verified',
+    });
+
+    renderWithProviders(<HomeScreen />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+
+    expect(await screen.findByText('Ready tonight')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Pay this partner'));
+    });
+
+    expect(useScenarioStore.getState().payDraft.merchantId).toBe('venue_1');
+    expect(useScenarioStore.getState().payDraft.amountText).toBe('148');
+    expect(router.push).toHaveBeenCalledWith('/pay/confirm');
   });
 });

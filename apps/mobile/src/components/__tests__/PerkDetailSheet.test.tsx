@@ -10,6 +10,7 @@ describe('PerkDetailSheet', () => {
     const { getByText } = renderWithProviders(
       <PerkDetailSheet
         onPrimaryAction={() => undefined}
+        onSetReminder={() => undefined}
         perk={{
           category: 'dining',
           city: 'Dubai',
@@ -28,6 +29,7 @@ describe('PerkDetailSheet', () => {
     expect(getByText('Arrival supper')).toBeTruthy();
     expect(getByText('Quiet value')).toBeTruthy();
     expect(getByText("Jun's Table")).toBeTruthy();
+    expect(getByText('Set for tonight')).toBeTruthy();
     expect(getByText('Use this perk')).toBeTruthy();
   });
 });

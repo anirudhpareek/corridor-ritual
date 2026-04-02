@@ -5,6 +5,7 @@ import type {
   PaymentQuote,
   PaymentReceipt,
   ProfilePayload,
+  RunReminder,
   SavedState,
   SplitRequest,
   SupportRequestPreview,
@@ -55,6 +56,10 @@ export type SavedStateRepositoryInput = {
   savedState: SavedState;
 };
 
+export type RunReminderRepositoryInput = {
+  reminder: RunReminder | null;
+};
+
 export interface HomeRepository {
   getHome: (input: HomeRepositoryInput) => Promise<HomePayload>;
 }
@@ -90,6 +95,10 @@ export interface SavedStateRepository {
   getSavedState: (input: SavedStateRepositoryInput) => Promise<SavedState>;
 }
 
+export interface RunReminderRepository {
+  getRunReminder: (input: RunReminderRepositoryInput) => Promise<RunReminder | null>;
+}
+
 export interface CorridorRepositories {
   home: HomeRepository;
   wallet: WalletRepository;
@@ -99,4 +108,5 @@ export interface CorridorRepositories {
   split: SplitRepository;
   support: SupportRepository;
   saved: SavedStateRepository;
+  reminder: RunReminderRepository;
 }

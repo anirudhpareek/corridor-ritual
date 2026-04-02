@@ -203,4 +203,9 @@ export const repositories: CorridorRepositories = {
       return savedState;
     },
   },
+  reminder: {
+    async getRunReminder({ reminder }) {
+      return reminder;
+    },
+  },
 };

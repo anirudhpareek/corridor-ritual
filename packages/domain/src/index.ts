@@ -144,6 +144,14 @@ export interface SavedState {
   tripIds: string[];
 }
 
+export interface RunReminder {
+  id: string;
+  city: string;
+  venueId: string | null;
+  perkId: string | null;
+  setAt: string;
+}
+
 export interface BalanceSummary {
   available: Money;
   pending: Money;

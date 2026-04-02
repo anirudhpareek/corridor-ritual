@@ -15,8 +15,10 @@ import { Text } from '../ui/Text';
 
 type Props = {
   onPrimaryAction: () => void;
+  onSetReminder?: () => void;
   onToggleSaved?: () => void;
   perk: Perk | null;
+  reminderSet?: boolean;
   saved?: boolean;
   venue: Venue | null;
 };
@@ -38,7 +40,7 @@ function corridorNoteForVenue(venue: Venue) {
 }
 
 export const VenueDetailSheet = forwardRef<BottomSheetModal, Props>(function VenueDetailSheet(
-  { onPrimaryAction, onToggleSaved, perk, saved = false, venue },
+  { onPrimaryAction, onSetReminder, onToggleSaved, perk, reminderSet = false, saved = false, venue },
   ref,
 ) {
   const theme = useTheme();
@@ -141,6 +143,18 @@ export const VenueDetailSheet = forwardRef<BottomSheetModal, Props>(function Ven
           </View>
         )}
 
+        {onSetReminder ? (
+          <View style={[styles.reminderBlock, { backgroundColor: theme.colors.sheet, borderColor: theme.colors.softLine }]}>
+            <Text color="muted" variant="caption">
+              Tonight cue
+            </Text>
+            <Text style={styles.noteCopy}>
+              Keep one corridor move pinned back on Home so the first table is already decided before the city gets loud.
+            </Text>
+            <Button label={reminderSet ? 'Tonight is ready' : 'Set for tonight'} onPress={onSetReminder} variant="quiet" />
+          </View>
+        ) : null}
+
         <View style={styles.actions}>
           <Button label="Pay this partner" onPress={onPrimaryAction} />
           {onToggleSaved ? (
@@ -204,6 +218,13 @@ const styles = StyleSheet.create({
   },
   noteCopy: {
     maxWidth: 300,
+  },
+  reminderBlock: {
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
   },
   perkBlock: {
     borderRadius: 18,
